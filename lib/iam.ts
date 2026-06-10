@@ -20,6 +20,45 @@ export async function iamGet<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** Authenticated mutation (POST/DELETE/…) against the gateway REST API. */
+export async function iamSend<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const session = await auth();
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${session?.accessToken ?? ""}`,
+      "Content-Type": "application/json",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    let msg = `${res.status}`;
+    try {
+      const j = (await res.json()) as { error?: string };
+      if (j.error) msg = j.error;
+    } catch {
+      /* ignore non-JSON error bodies */
+    }
+    throw new Error(msg);
+  }
+  return res.json() as Promise<T>;
+}
+
+export type ApiKey = {
+  id: string;
+  name: string;
+  scopes: string[];
+  created_at?: string;
+  expires_at?: string;
+  last_used_at?: string;
+};
+export type ApiKeysResponse = { keys: ApiKey[] };
+
 export type Identity = {
   user_id: string;
   email: string;
