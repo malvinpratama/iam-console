@@ -8,6 +8,8 @@ const LINKS = [
   { href: "/users", label: "Users", icon: "⊙", perm: "user:read" },
   { href: "/roles", label: "Roles", icon: "⊞", perm: "role:read" },
   { href: "/audit", label: "Audit", icon: "≣", perm: "audit:read" },
+  { href: "/security", label: "Two-factor", icon: "⊘" },
+  { href: "/api-keys", label: "API keys", icon: "⚿" },
 ];
 
 export function Nav({ perms }: { perms: string[] }) {
