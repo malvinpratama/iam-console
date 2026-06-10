@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   "Vault" — refined dark security console
+   near-black slate · electric-lime accent · mono data + grotesk display
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #0a0e14;
+  --surface: #0e141d;
+  --surface-2: #131b26;
+  --border: #1d2733;
+  --border-strong: #2a3645;
+  --text: #c8d2de;
+  --text-dim: #8b97a6;
+  --muted: #5d6b7c;
+  --accent: #c5f24a; /* electric lime */
+  --accent-press: #aee01f;
+  --danger: #fb7185;
+  --ok: #4ade80;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-press: var(--accent-press);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-display: var(--font-display-src), ui-sans-serif, sans-serif;
+  --font-sans: var(--font-sans-src), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-mono-src), ui-monospace, monospace;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans-src), ui-sans-serif, sans-serif;
+  background-image:
+    radial-gradient(60rem 40rem at 80% -10%, rgba(197, 242, 74, 0.06), transparent 70%),
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 100% 100%, 44px 44px, 44px 44px;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection { background: var(--accent); color: #0a0e14; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.mono { font-family: var(--font-mono-src), ui-monospace, monospace; }
+.tag {
+  font-family: var(--font-mono-src), ui-monospace, monospace;
+  font-size: 0.7rem; letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 0.15rem 0.5rem; border: 1px solid var(--border-strong);
+  border-radius: 999px; color: var(--text-dim);
+}
+.card {
+  background: linear-gradient(180deg, var(--surface-2), var(--surface));
+  border: 1px solid var(--border); border-radius: 14px;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
