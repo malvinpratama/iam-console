@@ -5,16 +5,17 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: "▣" },
-  { href: "/users", label: "Users", icon: "⊙" },
-  { href: "/roles", label: "Roles", icon: "⊞" },
-  { href: "/audit", label: "Audit", icon: "≣" },
+  { href: "/users", label: "Users", icon: "⊙", perm: "user:read" },
+  { href: "/roles", label: "Roles", icon: "⊞", perm: "role:read" },
+  { href: "/audit", label: "Audit", icon: "≣", perm: "audit:read" },
 ];
 
-export function Nav() {
+export function Nav({ perms }: { perms: string[] }) {
   const path = usePathname();
+  const links = LINKS.filter((l) => !l.perm || perms.includes(l.perm));
   return (
     <nav className="flex flex-col gap-1">
-      {LINKS.map((l) => {
+      {links.map((l) => {
         const active = path === l.href || path.startsWith(l.href + "/");
         return (
           <Link
