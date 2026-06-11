@@ -71,6 +71,8 @@ export type Profile = {
   display_name?: string;
   bio?: string;
   created_at?: string;
+  email?: string; // M6.4c: /users joins members → email comes from the membership
+  status?: string;
 };
 
 export type UsersResponse = {

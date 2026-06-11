@@ -7,19 +7,14 @@ import {
   type Identity,
 } from "@/lib/iam";
 
-export default async function Users({
-  searchParams,
-}: {
-  searchParams: Promise<{ deleted?: string }>;
-}) {
-  const deleted = (await searchParams).deleted === "true";
+export default async function Users() {
   let data: UsersResponse | null = null;
   let roles: string[] = [];
   let perms: string[] = [];
   let error: string | null = null;
   try {
     const [users, rolesRes, me] = await Promise.all([
-      iamGet<UsersResponse>(`/users?page=1&page_size=50${deleted ? "&deleted=true" : ""}`),
+      iamGet<UsersResponse>("/users"),
       iamGet<RolesResponse>("/roles").catch(() => ({ roles: [] }) as RolesResponse),
       iamGet<Identity>("/me"),
     ]);
@@ -34,10 +29,12 @@ export default async function Users({
     <div className="rise">
       <header className="mb-8 flex items-end justify-between">
         <div>
-          <div className="mono mb-1 text-xs uppercase tracking-[0.25em] text-muted">Directory</div>
+          <div className="mono mb-1 text-xs uppercase tracking-[0.25em] text-muted">
+            Active tenant
+          </div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight text-text">Users</h1>
         </div>
-        {data && <span className="tag">{data.total} total</span>}
+        {data && <span className="tag">{data.total} in tenant</span>}
       </header>
 
       {error ? (
@@ -48,7 +45,6 @@ export default async function Users({
         <UsersTable
           users={data?.profiles ?? []}
           roles={roles}
-          deleted={deleted}
           canDelete={perms.includes("user:delete")}
           canAssign={perms.includes("role:assign")}
         />
