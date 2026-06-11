@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { activate2fa, disable2fa, enroll2fa } from "@/app/(app)/security/actions";
 
 const btn =
@@ -76,21 +77,24 @@ export function SecurityPanel() {
           </button>
         ) : (
           <div className="mt-5 grid gap-4">
-            <div>
-              <div className="mono mb-1 text-xs uppercase tracking-widest text-muted">
-                Secret (manual entry)
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+              <div className="rounded-xl bg-white p-3">
+                <QRCodeSVG value={enroll.otpauth_uri} size={168} level="M" />
               </div>
-              <code className="mono break-all rounded-lg bg-surface px-3 py-2 text-sm text-text">
-                {enroll.secret}
-              </code>
-            </div>
-            <div>
-              <div className="mono mb-1 text-xs uppercase tracking-widest text-muted">
-                otpauth URI
+              <div className="text-sm text-text-dim">
+                <p className="font-medium text-text">Scan with your authenticator app</p>
+                <p className="mt-1">
+                  Google Authenticator, 1Password, Authy… then enter the 6-digit code below.
+                </p>
+                <details className="mt-3">
+                  <summary className="cursor-pointer text-muted hover:text-text-dim">
+                    Can&apos;t scan? Enter the key manually
+                  </summary>
+                  <code className="mono mt-2 block break-all rounded-lg bg-surface px-3 py-2 text-sm text-text">
+                    {enroll.secret}
+                  </code>
+                </details>
               </div>
-              <code className="mono block break-all rounded-lg bg-surface px-3 py-2 text-xs text-text-dim">
-                {enroll.otpauth_uri}
-              </code>
             </div>
             <div>
               <div className="mono mb-1 text-xs uppercase tracking-widest text-muted">
