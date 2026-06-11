@@ -4,22 +4,27 @@ import {
   backendLabel,
   type UsersResponse,
   type RolesResponse,
+  type ProjectsResponse,
+  type Project,
   type Identity,
 } from "@/lib/iam";
 
 export default async function Users() {
   let data: UsersResponse | null = null;
   let roles: string[] = [];
+  let projects: Project[] = [];
   let perms: string[] = [];
   let error: string | null = null;
   try {
-    const [users, rolesRes, me] = await Promise.all([
+    const [users, rolesRes, projectsRes, me] = await Promise.all([
       iamGet<UsersResponse>("/users"),
       iamGet<RolesResponse>("/roles").catch(() => ({ roles: [] }) as RolesResponse),
+      iamGet<ProjectsResponse>("/projects").catch(() => ({ projects: [] }) as ProjectsResponse),
       iamGet<Identity>("/me"),
     ]);
     data = users;
     roles = rolesRes.roles.map((r) => r.name);
+    projects = projectsRes.projects;
     perms = me.permissions;
   } catch (e) {
     error = (e as Error).message;
@@ -45,6 +50,7 @@ export default async function Users() {
         <UsersTable
           users={data?.profiles ?? []}
           roles={roles}
+          projects={projects}
           canDelete={perms.includes("user:delete")}
           canAssign={perms.includes("role:assign")}
         />
