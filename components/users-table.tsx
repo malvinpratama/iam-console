@@ -1,26 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { bulkAssignAct, deleteUserAct, restoreUserAct } from "@/app/(app)/users/actions";
+import { bulkAssignAct, deleteUserAct } from "@/app/(app)/users/actions";
 import type { Profile } from "@/lib/iam";
-
-const tab = (active: boolean) =>
-  `rounded-lg px-3 py-1.5 text-sm transition-colors ${
-    active ? "bg-surface-2 text-text" : "text-text-dim hover:bg-surface hover:text-text"
-  }`;
 
 export function UsersTable({
   users,
   roles,
-  deleted,
   canDelete,
   canAssign,
 }: {
   users: Profile[];
   roles: string[];
-  deleted: boolean;
   canDelete: boolean;
   canAssign: boolean;
 }) {
@@ -51,16 +43,8 @@ export function UsersTable({
 
   return (
     <div className="grid gap-4">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1">
-          <Link href="/users" className={tab(!deleted)}>
-            Active
-          </Link>
-          <Link href="/users?deleted=true" className={tab(deleted)}>
-            Deleted
-          </Link>
-        </div>
-        {canAssign && !deleted && sel.size > 0 && (
+      <div className="flex items-center justify-end">
+        {canAssign && sel.size > 0 && (
           <div className="flex items-center gap-2">
             <select
               value={role}
@@ -99,7 +83,7 @@ export function UsersTable({
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-border text-muted">
-              {canAssign && !deleted && (
+              {canAssign && (
                 <th className="px-4 py-3">
                   <input
                     type="checkbox"
@@ -110,8 +94,9 @@ export function UsersTable({
                   />
                 </th>
               )}
-              <th className="mono px-5 py-3 text-[0.65rem] uppercase tracking-widest font-medium">User ID</th>
-              <th className="mono px-5 py-3 text-[0.65rem] uppercase tracking-widest font-medium">Display name</th>
+              <th className="px-5 py-3 text-[0.65rem] uppercase tracking-widest font-medium">Email</th>
+              <th className="px-5 py-3 text-[0.65rem] uppercase tracking-widest font-medium">Display name</th>
+              <th className="px-5 py-3 text-[0.65rem] uppercase tracking-widest font-medium">Status</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
@@ -119,39 +104,35 @@ export function UsersTable({
             {users.length ? (
               users.map((p) => (
                 <tr key={p.user_id} className="border-b border-border/60 last:border-0 hover:bg-surface-2/60">
-                  {canAssign && !deleted && (
+                  {canAssign && (
                     <td className="px-4 py-3">
                       <input type="checkbox" checked={sel.has(p.user_id)} onChange={() => toggle(p.user_id)} />
                     </td>
                   )}
-                  <td className="mono px-5 py-3 text-text-dim">{p.user_id}</td>
-                  <td className="px-5 py-3 text-text">{p.display_name || "—"}</td>
+                  <td className="px-5 py-3 font-medium text-text">{p.email || "—"}</td>
+                  <td className="px-5 py-3 text-text-dim">{p.display_name || "—"}</td>
+                  <td className="px-5 py-3">
+                    <span className="mono rounded bg-surface-2 px-2 py-0.5 text-[0.65rem] uppercase tracking-wider text-accent">
+                      {p.status || "active"}
+                    </span>
+                  </td>
                   <td className="px-5 py-3 text-right">
-                    {canDelete &&
-                      (deleted ? (
-                        <button
-                          onClick={() => run(restoreUserAct(p.user_id), "User restored.")}
-                          disabled={busy}
-                          className="rounded-md border border-border px-2.5 py-1 text-xs text-accent transition-colors hover:bg-surface"
-                        >
-                          Restore
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => run(deleteUserAct(p.user_id, false), "User soft-deleted.")}
-                          disabled={busy}
-                          className="rounded-md border border-border px-2.5 py-1 text-xs text-danger transition-colors hover:bg-surface"
-                        >
-                          Delete
-                        </button>
-                      ))}
+                    {canDelete && (
+                      <button
+                        onClick={() => run(deleteUserAct(p.user_id, false), "User soft-deleted.")}
+                        disabled={busy}
+                        className="rounded-md border border-border px-2.5 py-1 text-xs text-danger transition-colors hover:bg-surface"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="px-5 py-10 text-center text-sm text-muted">
-                  {deleted ? "No deleted users." : "No users yet."}
+                <td colSpan={5} className="px-5 py-10 text-center text-sm text-muted">
+                  No users in this tenant.
                 </td>
               </tr>
             )}
