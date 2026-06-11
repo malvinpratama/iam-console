@@ -88,6 +88,9 @@ export type Role = {
 };
 export type RolesResponse = { roles: Role[] };
 
+export type Permission = { id: number; name: string; description?: string };
+export type PermissionsResponse = { permissions: Permission[] };
+
 export type AuditEvent = {
   id: number;
   actor_email: string;
