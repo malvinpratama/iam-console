@@ -1,6 +1,13 @@
 import { SecurityPanel } from "@/components/security-panel";
+import { iamGet } from "@/lib/iam";
 
-export default function Security() {
+export default async function Security() {
+  let enabled = false;
+  try {
+    enabled = (await iamGet<{ enabled: boolean }>("/auth/2fa")).enabled;
+  } catch {
+    /* default to the enroll view if status can't be read */
+  }
   return (
     <div className="rise">
       <header className="mb-8">
@@ -9,7 +16,7 @@ export default function Security() {
           Two-factor auth
         </h1>
       </header>
-      <SecurityPanel />
+      <SecurityPanel enabled={enabled} />
     </div>
   );
 }

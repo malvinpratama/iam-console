@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { activate2fa, disable2fa, enroll2fa } from "@/app/(app)/security/actions";
 
@@ -11,7 +12,8 @@ const ghost =
 const input =
   "mono w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm tracking-widest text-text outline-none focus:border-accent";
 
-export function SecurityPanel() {
+export function SecurityPanel({ enabled }: { enabled: boolean }) {
+  const router = useRouter();
   const [enroll, setEnroll] = useState<{
     secret: string;
     otpauth_uri: string;
@@ -40,6 +42,7 @@ export function SecurityPanel() {
       setMsg({ kind: "ok", text: "2FA is now active. You'll be asked for a code at every login." });
       setEnroll(null);
       setActCode("");
+      router.refresh();
     } else setMsg({ kind: "err", text: r.error ?? "failed" });
   }
 
@@ -51,6 +54,7 @@ export function SecurityPanel() {
     if (r.ok) {
       setMsg({ kind: "ok", text: "2FA disabled." });
       setDisCode("");
+      router.refresh();
     } else setMsg({ kind: "err", text: r.error ?? "failed" });
   }
 
@@ -64,7 +68,18 @@ export function SecurityPanel() {
         </div>
       )}
 
-      {/* Enable */}
+      {enabled && (
+        <div className="card flex items-center gap-3 p-5">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-accent/15 text-accent">✓</span>
+          <div>
+            <p className="font-medium text-text">Two-factor auth is on</p>
+            <p className="text-sm text-muted">Your account asks for a code at every login.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Enable — only when 2FA isn't already on */}
+      {!enabled && (
       <section className="card p-6">
         <h2 className="font-display text-lg font-bold text-text">Enable two-factor auth</h2>
         <p className="mt-1 text-sm text-muted">
@@ -122,8 +137,10 @@ export function SecurityPanel() {
           </div>
         )}
       </section>
+      )}
 
-      {/* Disable */}
+      {/* Disable — only when 2FA is on */}
+      {enabled && (
       <section className="card p-6">
         <h2 className="font-display text-lg font-bold text-text">Disable two-factor auth</h2>
         <p className="mt-1 text-sm text-muted">
@@ -141,6 +158,7 @@ export function SecurityPanel() {
           </button>
         </div>
       </section>
+      )}
     </div>
   );
 }
