@@ -24,12 +24,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   ],
   callbacks: {
-    async jwt({ token, account }) {
+    async jwt({ token, account, trigger, session }) {
       // Initial sign-in: persist the tokens issued by the provider.
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at; // unix seconds
+        token.error = undefined;
+        return token;
+      }
+
+      // Tenant switch: the switcher calls update({...}) with the freshly issued
+      // pair from POST /auth/switch — adopt it as the session's active token.
+      if (trigger === "update" && session?.accessToken) {
+        token.accessToken = session.accessToken as string;
+        if (session.refreshToken) token.refreshToken = session.refreshToken as string;
+        token.expiresAt = session.expiresAt as number;
         token.error = undefined;
         return token;
       }

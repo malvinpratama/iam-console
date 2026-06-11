@@ -100,3 +100,29 @@ export type AuditEvent = {
   created_at: string;
 };
 export type AuditResponse = { events: AuditEvent[] };
+
+// ── Multi-tenant (M6) ───────────────────────────────────────
+
+export type Membership = {
+  tenant_id: string;
+  tenant_slug: string;
+  tenant_name: string;
+  status: string;
+};
+export type MembershipsResponse = { memberships: Membership[] };
+
+export type Tenant = { id: string; slug: string; name: string; status: string };
+export type TenantsResponse = { tenants: Tenant[] };
+
+export type Project = { id: string; tenant_id: string; slug: string; name: string };
+export type ProjectsResponse = { projects: Project[] };
+
+export type Member = { user_id: string; email: string; status: string };
+export type MembersResponse = { members: Member[] };
+
+export type TokenPair = {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+};

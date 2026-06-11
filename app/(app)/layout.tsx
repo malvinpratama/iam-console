@@ -1,7 +1,14 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
-import { backendLabel, iamGet, type Identity } from "@/lib/iam";
+import {
+  backendLabel,
+  iamGet,
+  type Identity,
+  type Membership,
+  type MembershipsResponse,
+} from "@/lib/iam";
 import { Nav } from "@/components/nav";
+import { TenantSwitcher } from "@/components/tenant-switcher";
 
 export default async function AppLayout({
   children,
@@ -13,8 +20,16 @@ export default async function AppLayout({
 
   // Permissions drive which nav items appear (no point showing a 403).
   let perms: string[] = [];
+  let memberships: Membership[] = [];
   try {
-    perms = (await iamGet<Identity>("/me")).permissions ?? [];
+    const [me, m] = await Promise.all([
+      iamGet<Identity>("/me"),
+      iamGet<MembershipsResponse>("/me/memberships").catch(
+        () => ({ memberships: [] }) as MembershipsResponse,
+      ),
+    ]);
+    perms = me.permissions ?? [];
+    memberships = m.memberships ?? [];
   } catch {
     /* keep nav minimal if /me is unreachable */
   }
@@ -33,6 +48,7 @@ export default async function AppLayout({
             </div>
           </div>
         </div>
+        <TenantSwitcher memberships={memberships} />
         <Nav perms={perms} />
         <div className="mt-auto border-t border-border pt-4">
           <div className="mono mb-3 truncate text-xs text-text-dim" title={email}>
