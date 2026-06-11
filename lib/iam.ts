@@ -122,6 +122,9 @@ export type ProjectsResponse = { projects: Project[] };
 export type Member = { user_id: string; email: string; status: string };
 export type MembersResponse = { members: Member[] };
 
+export type RoleAssignment = { role: string; project_id: string; project_slug: string };
+export type RoleAssignmentsResponse = { assignments: RoleAssignment[] };
+
 export type TokenPair = {
   access_token: string;
   refresh_token: string;

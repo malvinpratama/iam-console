@@ -1,21 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
 import { bulkAssignAct, deleteUserAct } from "@/app/(app)/users/actions";
-import type { Profile } from "@/lib/iam";
+import { UserRoles } from "@/components/user-roles";
+import type { Profile, Project } from "@/lib/iam";
 
 export function UsersTable({
   users,
   roles,
+  projects,
   canDelete,
   canAssign,
 }: {
   users: Profile[];
   roles: string[];
+  projects: Project[];
   canDelete: boolean;
   canAssign: boolean;
 }) {
+  const [openRoles, setOpenRoles] = useState<string | null>(null);
   const router = useRouter();
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [role, setRole] = useState(roles[0] ?? "");
@@ -67,7 +71,7 @@ export function UsersTable({
               }
               className="rounded-lg bg-accent px-4 py-1.5 text-sm font-medium text-bg transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              Assign to {sel.size}
+              Assign to {sel.size} (tenant-wide)
             </button>
           </div>
         )}
@@ -103,31 +107,51 @@ export function UsersTable({
           <tbody>
             {users.length ? (
               users.map((p) => (
-                <tr key={p.user_id} className="border-b border-border/60 last:border-0 hover:bg-surface-2/60">
-                  {canAssign && (
-                    <td className="px-4 py-3">
-                      <input type="checkbox" checked={sel.has(p.user_id)} onChange={() => toggle(p.user_id)} />
-                    </td>
-                  )}
-                  <td className="px-5 py-3 font-medium text-text">{p.email || "—"}</td>
-                  <td className="px-5 py-3 text-text-dim">{p.display_name || "—"}</td>
-                  <td className="px-5 py-3">
-                    <span className="mono rounded bg-surface-2 px-2 py-0.5 text-[0.65rem] uppercase tracking-wider text-accent">
-                      {p.status || "active"}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    {canDelete && (
-                      <button
-                        onClick={() => run(deleteUserAct(p.user_id, false), "User soft-deleted.")}
-                        disabled={busy}
-                        className="rounded-md border border-border px-2.5 py-1 text-xs text-danger transition-colors hover:bg-surface"
-                      >
-                        Delete
-                      </button>
+                <Fragment key={p.user_id}>
+                  <tr className="border-b border-border/60 last:border-0 hover:bg-surface-2/60">
+                    {canAssign && (
+                      <td className="px-4 py-3">
+                        <input type="checkbox" checked={sel.has(p.user_id)} onChange={() => toggle(p.user_id)} />
+                      </td>
                     )}
-                  </td>
-                </tr>
+                    <td className="px-5 py-3 font-medium text-text">{p.email || "—"}</td>
+                    <td className="px-5 py-3 text-text-dim">{p.display_name || "—"}</td>
+                    <td className="px-5 py-3">
+                      <span className="mono rounded bg-surface-2 px-2 py-0.5 text-[0.65rem] uppercase tracking-wider text-accent">
+                        {p.status || "active"}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <button
+                        onClick={() => setOpenRoles(openRoles === p.user_id ? null : p.user_id)}
+                        className="mr-2 rounded-md border border-border px-2.5 py-1 text-xs text-text-dim transition-colors hover:border-accent hover:text-accent"
+                      >
+                        Roles {openRoles === p.user_id ? "▾" : "▸"}
+                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={() => run(deleteUserAct(p.user_id, false), "User soft-deleted.")}
+                          disabled={busy}
+                          className="rounded-md border border-border px-2.5 py-1 text-xs text-danger transition-colors hover:bg-surface"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                  {openRoles === p.user_id && (
+                    <tr>
+                      <td colSpan={canAssign ? 5 : 4} className="px-5 pb-4">
+                        <UserRoles
+                          userId={p.user_id}
+                          roles={roles}
+                          projects={projects}
+                          canAssign={canAssign}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))
             ) : (
               <tr>
