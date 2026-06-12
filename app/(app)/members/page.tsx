@@ -24,7 +24,7 @@ export default async function Members() {
       </header>
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t load members ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t load members ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : (
         <MembersManager

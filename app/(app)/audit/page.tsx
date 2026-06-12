@@ -18,7 +18,7 @@ export default async function Audit() {
 
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t load audit log ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t load audit log ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : (
         <ol className="card divide-y divide-border/60">

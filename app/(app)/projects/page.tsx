@@ -26,7 +26,7 @@ export default async function Projects() {
       </header>
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t load projects ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t load projects ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : (
         <ProjectsManager projects={projects.projects} canWrite={perms.includes("project:write")} />
