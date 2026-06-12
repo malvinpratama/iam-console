@@ -58,7 +58,15 @@ export default async function Login() {
           </form>
         </div>
 
-        <div className="mt-8 flex items-center gap-3 text-xs text-muted">
+        <div className="mt-6 rounded-lg border border-border bg-surface/40 px-4 py-3 text-xs leading-relaxed text-text-dim">
+          <span className="text-muted">Demo (read-only) — sign in with</span>
+          <br />
+          <span className="mono text-text">demo@iam.local</span>
+          <span className="text-muted"> · </span>
+          <span className="mono text-text">demo1234</span>
+        </div>
+
+        <div className="mt-6 flex items-center gap-3 text-xs text-muted">
           <span className="mono">OIDC · RS256 · PKCE</span>
         </div>
       </div>
