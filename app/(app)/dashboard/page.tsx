@@ -18,7 +18,7 @@ export default async function Dashboard() {
 
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t reach the IAM API ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t reach the IAM API ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : id ? (
         <div className="flex flex-col gap-5">

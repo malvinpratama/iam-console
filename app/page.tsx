@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
-import { backendLabel } from "@/lib/iam";
 
 export default async function Login() {
   const session = await auth();
@@ -22,28 +21,44 @@ export default async function Login() {
           <span className="text-accent">access</span> &amp; control.
         </h1>
         <p className="mt-5 max-w-sm text-sm leading-relaxed text-text-dim">
-          A single console over the IAM platform — sign in via the provider&apos;s own
-          OpenID Connect flow (Authorization Code&nbsp;+&nbsp;PKCE), no separate password here.
+          One console over two interchangeable backends — the same IAM implemented
+          in <span className="text-text">Go</span> and <span className="text-text">Rust</span>.
+          Pick one to sign in via its OpenID Connect flow (Authorization
+          Code&nbsp;+&nbsp;PKCE). Your session is bound to that backend.
         </p>
 
-        <form
-          action={async () => {
-            "use server";
-            await signIn("iam", { redirectTo: "/dashboard" });
-          }}
-          className="mt-9"
-        >
-          <button
-            type="submit"
-            className="group flex w-full items-center justify-between rounded-xl bg-accent px-5 py-3.5 font-display text-sm font-bold text-[#0a0e14] transition-colors hover:bg-accent-press"
+        <div className="mt-9 space-y-3">
+          <form
+            action={async () => {
+              "use server";
+              await signIn("iam", { redirectTo: "/dashboard" });
+            }}
           >
-            <span>Login with iam</span>
-            <span className="mono text-base transition-transform group-hover:translate-x-1">→</span>
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="group flex w-full items-center justify-between rounded-xl bg-accent px-5 py-3.5 font-display text-sm font-bold text-[#0a0e14] transition-colors hover:bg-accent-press"
+            >
+              <span>Sign in via <span className="mono">Go</span> backend</span>
+              <span className="mono text-base transition-transform group-hover:translate-x-1">→</span>
+            </button>
+          </form>
+          <form
+            action={async () => {
+              "use server";
+              await signIn("iam-rust", { redirectTo: "/dashboard" });
+            }}
+          >
+            <button
+              type="submit"
+              className="group flex w-full items-center justify-between rounded-xl border border-border-strong bg-surface px-5 py-3.5 font-display text-sm font-bold text-text transition-colors hover:border-accent hover:text-accent"
+            >
+              <span>Sign in via <span className="mono">Rust</span> backend</span>
+              <span className="mono text-base transition-transform group-hover:translate-x-1">→</span>
+            </button>
+          </form>
+        </div>
 
         <div className="mt-8 flex items-center gap-3 text-xs text-muted">
-          <span className="tag">backend · {backendLabel()}</span>
           <span className="mono">OIDC · RS256 · PKCE</span>
         </div>
       </div>

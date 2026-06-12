@@ -1,14 +1,16 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import {
-  backendLabel,
+  activeIssuer,
   iamGet,
+  type BackendId,
   type Identity,
   type Membership,
   type MembershipsResponse,
 } from "@/lib/iam";
 import { Nav } from "@/components/nav";
 import { TenantSwitcher } from "@/components/tenant-switcher";
+import { BackendSwitch } from "@/components/backend-switch";
 
 export default async function AppLayout({
   children,
@@ -17,6 +19,7 @@ export default async function AppLayout({
 }) {
   const session = await auth();
   const email = session?.user?.email ?? "—";
+  const backend: BackendId = session?.backend === "iam-rust" ? "iam-rust" : "iam";
 
   // Permissions drive which nav items appear (no point showing a 403).
   let perms: string[] = [];
@@ -43,9 +46,7 @@ export default async function AppLayout({
           </span>
           <div className="leading-tight">
             <div className="font-display text-sm font-bold text-text">IAM Console</div>
-            <div className="mono text-[0.65rem] uppercase tracking-widest text-muted">
-              backend · {backendLabel()}
-            </div>
+            <BackendSwitch current={backend} />
           </div>
         </div>
         <TenantSwitcher memberships={memberships} />
@@ -57,8 +58,8 @@ export default async function AppLayout({
           <form
             action={async () => {
               "use server";
+              const issuer = await activeIssuer();
               await signOut({ redirect: false });
-              const issuer = process.env.IAM_ISSUER ?? "http://localhost:8080";
               const post = process.env.AUTH_URL ?? "/";
               // RP-initiated logout: also end the IAM browser session so the next
               // login re-prompts for credentials (lets you switch accounts).

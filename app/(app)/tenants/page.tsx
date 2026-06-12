@@ -24,7 +24,7 @@ export default async function Tenants() {
       </header>
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t load tenants ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t load tenants ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : (
         <TenantsManager tenants={tenants.tenants} canWrite={perms.includes("tenant:write")} />

@@ -38,7 +38,7 @@ export default async function Roles() {
 
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t load roles ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t load roles ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : (
         <RolesManager

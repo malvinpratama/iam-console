@@ -1,41 +1,68 @@
 import NextAuth from "next-auth";
 
-// IAM is the OIDC issuer (the gateway). Switch backend (Go ↔ Rust) by changing
-// IAM_ISSUER. The same base URL also serves the REST API the console consumes.
-const issuer = process.env.IAM_ISSUER ?? "http://localhost:8080";
+// Two interchangeable IAM backends: the Go and Rust implementations of the same
+// OIDC/REST API. The user picks one at login; the whole session (tokens + every
+// REST call) is bound to that backend, because a token issued by one backend is
+// not valid on the other. Switching backend means re-authenticating via the
+// other provider. Provider id "iam" = Go (keeps the original /callback/iam URL),
+// "iam-rust" = Rust.
+type BackendId = "iam" | "iam-rust";
+
+const clientId = process.env.IAM_CLIENT_ID ?? "iam-admin-console";
+
+const BACKENDS: Record<BackendId, { name: string; issuer: string; clientSecret: string }> = {
+  iam: {
+    name: "Go backend",
+    issuer: process.env.IAM_ISSUER ?? "http://localhost:8080",
+    clientSecret: process.env.IAM_CLIENT_SECRET ?? "console-demo-secret-rotate-me",
+  },
+  "iam-rust": {
+    name: "Rust backend",
+    issuer: process.env.IAM_RUST_ISSUER ?? "http://localhost:8081",
+    // Falls back to the Go secret if both backends share one console-client secret.
+    clientSecret:
+      process.env.IAM_RUST_CLIENT_SECRET ??
+      process.env.IAM_CLIENT_SECRET ??
+      "console-demo-secret-rotate-me",
+  },
+};
+
+function backendOf(value: unknown): BackendId {
+  return value === "iam-rust" ? "iam-rust" : "iam";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
-  providers: [
-    {
-      id: "iam",
-      name: "IAM",
-      type: "oidc",
-      issuer,
-      clientId: process.env.IAM_CLIENT_ID ?? "iam-admin-console",
-      clientSecret: process.env.IAM_CLIENT_SECRET ?? "console-demo-secret-rotate-me",
-      authorization: { params: { scope: "openid profile email" } },
-      // Our token endpoint accepts client_secret_post; advertise it explicitly.
-      client: { token_endpoint_auth_method: "client_secret_post" },
-      // Minimal id_token profile → console identity.
-      profile(profile) {
-        return { id: profile.sub, email: profile.email, name: profile.email };
-      },
+  providers: (Object.keys(BACKENDS) as BackendId[]).map((id) => ({
+    id,
+    name: BACKENDS[id].name,
+    type: "oidc",
+    issuer: BACKENDS[id].issuer,
+    clientId,
+    clientSecret: BACKENDS[id].clientSecret,
+    authorization: { params: { scope: "openid profile email" } },
+    // Our token endpoint accepts client_secret_post; advertise it explicitly.
+    client: { token_endpoint_auth_method: "client_secret_post" },
+    // Minimal id_token profile → console identity.
+    profile(profile) {
+      return { id: profile.sub, email: profile.email, name: profile.email };
     },
-  ],
+  })),
   callbacks: {
     async jwt({ token, account, trigger, session }) {
-      // Initial sign-in: persist the tokens issued by the provider.
+      // Initial sign-in: persist the tokens + which backend issued them.
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at; // unix seconds
+        token.backend = backendOf(account.provider);
         token.error = undefined;
         return token;
       }
 
       // Tenant switch: the switcher calls update({...}) with the freshly issued
       // pair from POST /auth/switch — adopt it as the session's active token.
+      // The backend is unchanged (you can't switch tenant across backends).
       if (trigger === "update" && session?.accessToken) {
         token.accessToken = session.accessToken as string;
         if (session.refreshToken) token.refreshToken = session.refreshToken as string;
@@ -50,21 +77,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return token;
       }
 
-      // Expired → rotate using the refresh token against the IAM token endpoint.
+      // Expired → rotate against the SAME backend's token endpoint.
       const refreshToken = token.refreshToken as string | undefined;
       if (!refreshToken) {
         token.error = "RefreshTokenError";
         return token;
       }
+      const cfg = BACKENDS[backendOf(token.backend)];
       try {
-        const res = await fetch(`${issuer}/token`, {
+        const res = await fetch(`${cfg.issuer}/token`, {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
           body: new URLSearchParams({
             grant_type: "refresh_token",
             refresh_token: refreshToken,
-            client_id: process.env.IAM_CLIENT_ID ?? "iam-admin-console",
-            client_secret: process.env.IAM_CLIENT_SECRET ?? "console-demo-secret-rotate-me",
+            client_id: clientId,
+            client_secret: cfg.clientSecret,
           }),
           cache: "no-store",
         });
@@ -86,6 +114,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken as string | undefined;
+      session.backend = token.backend as string | undefined;
       session.error = token.error as string | undefined;
       if (session.user) session.user.id = token.sub as string;
       return session;

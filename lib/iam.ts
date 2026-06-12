@@ -1,18 +1,41 @@
 import { auth } from "@/auth";
 
-const BASE = process.env.IAM_ISSUER ?? "http://localhost:8080";
+// The console can talk to either implementation of the IAM (Go or Rust). The
+// chosen backend is bound to the session at login (a token from one backend is
+// not valid on the other), so every request resolves its base URL from the
+// session's `backend`, not a single env var.
+export type BackendId = "iam" | "iam-rust";
 
-/** Which backend the console is pointed at (Go or Rust), for display. */
-export function backendLabel(): string {
-  if (BASE.includes("iam-rust")) return "Rust";
-  if (BASE.includes("iam-go")) return "Go";
-  return "local";
+export const BACKENDS: Record<BackendId, { label: string; url: string }> = {
+  iam: { label: "Go", url: process.env.IAM_ISSUER ?? "http://localhost:8080" },
+  "iam-rust": { label: "Rust", url: process.env.IAM_RUST_ISSUER ?? "http://localhost:8081" },
+};
+
+function backendId(value: unknown): BackendId {
+  return value === "iam-rust" ? "iam-rust" : "iam";
+}
+
+/** The session's active backend id (defaults to Go when unset). */
+export async function activeBackend(): Promise<BackendId> {
+  const session = await auth();
+  return backendId(session?.backend);
+}
+
+/** Base URL (issuer) of the session's active backend — used for logout etc. */
+export async function activeIssuer(): Promise<string> {
+  return BACKENDS[await activeBackend()].url;
+}
+
+/** Human label for the session's active backend (Go / Rust). */
+export async function backendLabel(): Promise<string> {
+  return BACKENDS[await activeBackend()].label;
 }
 
 /** Authenticated GET against the gateway REST API using the session token. */
 export async function iamGet<T>(path: string): Promise<T> {
   const session = await auth();
-  const res = await fetch(`${BASE}${path}`, {
+  const base = BACKENDS[backendId(session?.backend)].url;
+  const res = await fetch(`${base}${path}`, {
     headers: { Authorization: `Bearer ${session?.accessToken ?? ""}` },
     cache: "no-store",
   });
@@ -27,7 +50,8 @@ export async function iamSend<T>(
   body?: unknown,
 ): Promise<T> {
   const session = await auth();
-  const res = await fetch(`${BASE}${path}`, {
+  const base = BACKENDS[backendId(session?.backend)].url;
+  const res = await fetch(`${base}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${session?.accessToken ?? ""}`,

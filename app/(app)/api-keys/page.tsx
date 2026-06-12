@@ -22,7 +22,7 @@ export default async function ApiKeys() {
       </header>
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t load keys ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t load keys ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : (
         <ApiKeysPanel keys={keys.keys} perms={perms} />

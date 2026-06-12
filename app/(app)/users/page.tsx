@@ -44,7 +44,7 @@ export default async function Users() {
 
       {error ? (
         <div className="card p-6 text-sm text-danger">
-          Couldn&apos;t load users ({backendLabel()}): <span className="mono">{error}</span>
+          Couldn&apos;t load users ({await backendLabel()}): <span className="mono">{error}</span>
         </div>
       ) : (
         <UsersTable
