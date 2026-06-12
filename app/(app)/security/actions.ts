@@ -35,3 +35,15 @@ export async function disable2fa(code: string): Promise<{ ok: boolean; error?: s
     return { ok: false, error: (e as Error).message };
   }
 }
+
+export async function changePassword(
+  oldPassword: string,
+  newPassword: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await iamSend("POST", "/auth/password", { old_password: oldPassword, new_password: newPassword });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message };
+  }
+}
