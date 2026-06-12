@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { activate2fa, disable2fa, enroll2fa } from "@/app/(app)/security/actions";
+import { activate2fa, changePassword, disable2fa, enroll2fa } from "@/app/(app)/security/actions";
 
 const btn =
   "rounded-lg bg-accent px-4 py-2 text-sm font-medium text-bg transition-opacity hover:opacity-90 disabled:opacity-50";
@@ -11,6 +11,8 @@ const ghost =
   "rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-dim transition-colors hover:bg-surface disabled:opacity-50";
 const input =
   "mono w-40 rounded-lg border border-border bg-surface px-3 py-2 text-sm tracking-widest text-text outline-none focus:border-accent";
+const pwInput =
+  "w-full max-w-xs rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text outline-none focus:border-accent";
 
 export function SecurityPanel({ enabled }: { enabled: boolean }) {
   const router = useRouter();
@@ -21,6 +23,9 @@ export function SecurityPanel({ enabled }: { enabled: boolean }) {
   } | null>(null);
   const [actCode, setActCode] = useState("");
   const [disCode, setDisCode] = useState("");
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -55,6 +60,27 @@ export function SecurityPanel({ enabled }: { enabled: boolean }) {
       setMsg({ kind: "ok", text: "2FA disabled." });
       setDisCode("");
       router.refresh();
+    } else setMsg({ kind: "err", text: r.error ?? "failed" });
+  }
+
+  async function doChangePassword() {
+    setMsg(null);
+    if (newPw.length < 8) {
+      setMsg({ kind: "err", text: "New password must be at least 8 characters." });
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setMsg({ kind: "err", text: "New password and confirmation don't match." });
+      return;
+    }
+    setBusy(true);
+    const r = await changePassword(oldPw, newPw);
+    setBusy(false);
+    if (r.ok) {
+      setMsg({ kind: "ok", text: "Password changed. Other sessions were signed out." });
+      setOldPw("");
+      setNewPw("");
+      setConfirmPw("");
     } else setMsg({ kind: "err", text: r.error ?? "failed" });
   }
 
@@ -159,6 +185,47 @@ export function SecurityPanel({ enabled }: { enabled: boolean }) {
         </div>
       </section>
       )}
+
+      {/* Change password — always available */}
+      <section className="card p-6">
+        <h2 className="font-display text-lg font-bold text-text">Change password</h2>
+        <p className="mt-1 text-sm text-muted">
+          Confirm your current password to set a new one. Other sessions are signed out.
+        </p>
+        <div className="mt-4 grid gap-3">
+          <input
+            className={pwInput}
+            type="password"
+            autoComplete="current-password"
+            placeholder="Current password"
+            value={oldPw}
+            onChange={(e) => setOldPw(e.target.value)}
+          />
+          <input
+            className={pwInput}
+            type="password"
+            autoComplete="new-password"
+            placeholder="New password (min 8 characters)"
+            value={newPw}
+            onChange={(e) => setNewPw(e.target.value)}
+          />
+          <input
+            className={pwInput}
+            type="password"
+            autoComplete="new-password"
+            placeholder="Confirm new password"
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+          />
+          <button
+            className={`${btn} w-fit`}
+            onClick={doChangePassword}
+            disabled={busy || !oldPw || newPw.length < 8 || newPw !== confirmPw}
+          >
+            {busy ? "Saving…" : "Change password"}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

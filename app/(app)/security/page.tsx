@@ -13,7 +13,7 @@ export default async function Security() {
       <header className="mb-8">
         <div className="mono mb-1 text-xs uppercase tracking-[0.25em] text-muted">Account</div>
         <h1 className="font-display text-3xl font-extrabold tracking-tight text-text">
-          Two-factor auth
+          Security
         </h1>
       </header>
       <SecurityPanel enabled={enabled} />
