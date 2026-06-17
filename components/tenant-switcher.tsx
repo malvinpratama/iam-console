@@ -2,25 +2,16 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { switchTenantAct } from "@/app/(app)/tenant-actions";
 import type { Membership } from "@/lib/iam";
 
-/** Read the tenant_id claim out of a JWT access token (no verification — display
- * only; the gateway is the source of truth). */
-function tenantOf(token?: string): string | undefined {
-  if (!token) return undefined;
-  try {
-    const p = token.split(".")[1];
-    const json = JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/")));
-    return json.tenant_id as string | undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-export function TenantSwitcher({ memberships }: { memberships: Membership[] }) {
-  const { data: session, update } = useSession();
+export function TenantSwitcher({
+  memberships,
+  activeTenantId,
+}: {
+  memberships: Membership[];
+  activeTenantId?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,21 +28,17 @@ export function TenantSwitcher({ memberships }: { memberships: Membership[] }) {
 
   if (memberships.length === 0) return null;
 
-  const activeId = tenantOf(session?.accessToken);
-  const active = memberships.find((m) => m.tenant_id === activeId) ?? memberships[0];
+  const active = memberships.find((m) => m.tenant_id === activeTenantId) ?? memberships[0];
 
   async function pick(m: Membership) {
     setOpen(false);
     if (m.tenant_id === active.tenant_id || busy) return;
     setBusy(true);
     setErr(null);
+    // The server action re-issues the token AND adopts it into the JWT cookie
+    // server-side (see switchTenantAct); the client only triggers a refresh.
     const r = await switchTenantAct(m.tenant_id);
-    if (r.ok && r.pair) {
-      await update({
-        accessToken: r.pair.access_token,
-        refreshToken: r.pair.refresh_token,
-        expiresAt: Math.floor(Date.now() / 1000) + (r.pair.expires_in ?? 900),
-      });
+    if (r.ok) {
       router.refresh();
     } else {
       setErr(r.error ?? "switch failed");

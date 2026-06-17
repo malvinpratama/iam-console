@@ -2,15 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { iamSend, type TokenPair } from "@/lib/iam";
+import { unstable_update } from "@/auth";
 
-type SwitchResult = { ok: boolean; pair?: TokenPair; error?: string };
+type SwitchResult = { ok: boolean; error?: string };
 
-/** Re-issue the session token bound to another tenant the caller belongs to.
- * The new pair is returned for the client to adopt via the NextAuth session. */
+/** Re-issue the session token bound to another tenant the caller belongs to and
+ * adopt it into the JWT server-side — the new token never crosses to the client. */
 export async function switchTenantAct(tenantId: string): Promise<SwitchResult> {
   try {
     const pair = await iamSend<TokenPair>("POST", "/auth/switch", { tenant_id: tenantId });
-    return { ok: true, pair };
+    await unstable_update({
+      accessToken: pair.access_token,
+      refreshToken: pair.refresh_token,
+      expiresAt: Math.floor(Date.now() / 1000) + (pair.expires_in ?? 900),
+    });
+    return { ok: true };
   } catch (e) {
     return { ok: false, error: (e as Error).message };
   }
