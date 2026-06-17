@@ -10,20 +10,34 @@ type BackendId = "iam" | "iam-rust";
 
 const clientId = process.env.IAM_CLIENT_ID ?? "iam-admin-console";
 
+// The OIDC client secret MUST be provided via env in production — never fall back
+// to the well-known demo value, which would let anyone impersonate the console
+// client. The fallback exists only for local dev (NODE_ENV !== "production").
+function requireSecret(value: string | undefined, who: string): string {
+  if (value) return value;
+  // Fail at runtime, but not during `next build` (page-data collection runs in
+  // production mode without runtime secrets) — that would break CI.
+  const building = process.env.NEXT_PHASE === "phase-production-build";
+  if (process.env.NODE_ENV === "production" && !building) {
+    throw new Error(`${who} must be set in production (refusing to use the demo secret)`);
+  }
+  return "console-demo-secret-rotate-me";
+}
+
 const BACKENDS: Record<BackendId, { name: string; issuer: string; clientSecret: string }> = {
   iam: {
     name: "Go backend",
     issuer: process.env.IAM_ISSUER ?? "http://localhost:8080",
-    clientSecret: process.env.IAM_CLIENT_SECRET ?? "console-demo-secret-rotate-me",
+    clientSecret: requireSecret(process.env.IAM_CLIENT_SECRET, "IAM_CLIENT_SECRET"),
   },
   "iam-rust": {
     name: "Rust backend",
     issuer: process.env.IAM_RUST_ISSUER ?? "http://localhost:8081",
     // Falls back to the Go secret if both backends share one console-client secret.
-    clientSecret:
-      process.env.IAM_RUST_CLIENT_SECRET ??
-      process.env.IAM_CLIENT_SECRET ??
-      "console-demo-secret-rotate-me",
+    clientSecret: requireSecret(
+      process.env.IAM_RUST_CLIENT_SECRET ?? process.env.IAM_CLIENT_SECRET,
+      "IAM_RUST_CLIENT_SECRET / IAM_CLIENT_SECRET",
+    ),
   },
 };
 
@@ -31,7 +45,7 @@ function backendOf(value: unknown): BackendId {
   return value === "iam-rust" ? "iam-rust" : "iam";
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   trustHost: true,
   providers: (Object.keys(BACKENDS) as BackendId[]).map((id) => ({
     id,
@@ -113,7 +127,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken as string | undefined;
+      // NB: the access token is intentionally NOT copied onto the session — it
+      // must never reach client JS (/api/auth/session). Server code reads it
+      // from the JWT cookie via lib/token.ts. `backend`/`error` are non-secret.
       session.backend = token.backend as string | undefined;
       session.error = token.error as string | undefined;
       if (session.user) session.user.id = token.sub as string;

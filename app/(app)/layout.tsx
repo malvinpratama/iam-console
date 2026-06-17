@@ -8,6 +8,7 @@ import {
   type Membership,
   type MembershipsResponse,
 } from "@/lib/iam";
+import { activeTenantId } from "@/lib/token";
 import { Nav } from "@/components/nav";
 import { TenantSwitcher } from "@/components/tenant-switcher";
 import { BackendSwitch } from "@/components/backend-switch";
@@ -18,8 +19,15 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await auth();
+  // Defense-in-depth behind middleware.ts: never render the authenticated shell
+  // without a usable session (a failed refresh counts as logged-out).
+  if (!session?.user || session.error === "RefreshTokenError") {
+    redirect("/");
+  }
   const email = session?.user?.email ?? "—";
   const backend: BackendId = session?.backend === "iam-rust" ? "iam-rust" : "iam";
+
+  const tenantId = await activeTenantId();
 
   // Permissions drive which nav items appear (no point showing a 403).
   let perms: string[] = [];
@@ -49,7 +57,7 @@ export default async function AppLayout({
             <BackendSwitch current={backend} />
           </div>
         </div>
-        <TenantSwitcher memberships={memberships} />
+        <TenantSwitcher memberships={memberships} activeTenantId={tenantId} />
         <Nav perms={perms} />
         <div className="mt-auto border-t border-border pt-4">
           <div className="mono mb-3 truncate text-xs text-text-dim" title={email}>

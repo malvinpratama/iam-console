@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { sessionToken } from "@/lib/token";
 
 // The console can talk to either implementation of the IAM (Go or Rust). The
 // chosen backend is bound to the session at login (a token from one backend is
@@ -33,10 +34,10 @@ export async function backendLabel(): Promise<string> {
 
 /** Authenticated GET against the gateway REST API using the session token. */
 export async function iamGet<T>(path: string): Promise<T> {
-  const session = await auth();
-  const base = BACKENDS[backendId(session?.backend)].url;
+  const token = await sessionToken();
+  const base = BACKENDS[backendId(token?.backend)].url;
   const res = await fetch(`${base}${path}`, {
-    headers: { Authorization: `Bearer ${session?.accessToken ?? ""}` },
+    headers: { Authorization: `Bearer ${token?.accessToken ?? ""}` },
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`${path} → ${res.status}`);
@@ -49,12 +50,12 @@ export async function iamSend<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
-  const session = await auth();
-  const base = BACKENDS[backendId(session?.backend)].url;
+  const token = await sessionToken();
+  const base = BACKENDS[backendId(token?.backend)].url;
   const res = await fetch(`${base}${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${session?.accessToken ?? ""}`,
+      Authorization: `Bearer ${token?.accessToken ?? ""}`,
       "Content-Type": "application/json",
     },
     body: body === undefined ? undefined : JSON.stringify(body),
